@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO Analysis Results - SEO Analyzer</title>
+    <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}" type="image/x-icon">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            background-color: #4285F4;
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+        .score-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            font-size: 3rem;
+            font-weight: bold;
+            color: white;
+            position: relative;
+        }
+        .score-label {
+            position: absolute;
+            bottom: -30px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .score-excellent {
+            background: linear-gradient(135deg, #34A853, #4285F4);
+        }
+        .score-good {
+            background: linear-gradient(135deg, #4285F4, #FBBC05);
+        }
+        .score-average {
+            background: linear-gradient(135deg, #FBBC05, #EA4335);
+        }
+        .score-poor {
+            background: linear-gradient(135deg, #EA4335, #880E4F);
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        .card-header {
+            background-color: #4285F4;
+            color: white;
+            font-weight: bold;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        .recommendation {
+            background-color: #F1F3F4;
+            border-left: 4px solid #4285F4;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 0 5px 5px 0;
+        }
+        .factor-score {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .factor-score-bar {
+            flex-grow: 1;
+            height: 25px;
+            background-color: #E8EAED;
+            border-radius: 5px;
+            margin: 0 10px;
+            position: relative;
+        }
+        .factor-score-fill {
+            height: 100%;
+            border-radius: 5px;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .factor-score-text {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        .factor-weight {
+            font-size: 0.8rem;
+            color: #5F6368;
+        }
+        footer {
+            background-color: #343a40;
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+        .tab-content {
+            padding: 20px;
+        }
+        .nav-tabs .nav-link {
+            color: #4285F4;
+        }
+        .nav-tabs .nav-link.active {
+            font-weight: bold;
+            border-bottom: 3px solid #4285F4;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-spider me-2"></i>SEO Analyzer
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/batch">Batch Analysis</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/compare">Compare URLs</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">SEO Analysis Results</h5>
+                        <a href="/" class="btn btn-sm btn-light">
+                            <i class="fas fa-search me-1"></i>New Analysis
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h4>{{ results.url }}</h4>
+                                <p class="text-muted">Analyzed on {{ results.timestamp if results.timestamp else 'Today' }}</p>
+                                
+                                <!-- Score Circle -->
+                                <div class="score-circle 
+                                    {% if results.seo_score >= 80 %}score-excellent
+                                    {% elif results.seo_score >= 60 %}score-good
+                                    {% elif results.seo_score >= 40 %}score-average
+                                    {% else %}score-poor{% endif %}">
+                                    {{ results.seo_score }}
+                                    <div class="score-label">{{ results.seo_rating }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>Recommendations</h5>
+                                {% if results.recommendations %}
+                                    {% for recommendation in results.recommendations %}
+                                        <div class="recommendation">
+                                            <i class="fas fa-lightbulb me-2"></i>{{ recommendation }}
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="recommendation">
+                                        <i class="fas fa-check-circle me-2"></i>No critical issues found
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Factor Scores -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">SEO Factor Scores</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for factor, score in results.factor_scores.items() %}
+                            {% set factor_name = factor.replace('_score', '') %}
+                            {% set weight = results.factor_weights.get(factor_name, 0) %}
+                            <div class="factor-score">
+                                <div style="width: 200px;">
+                                    {{ factor_name.replace('_', ' ').title() }}
+                                    <div class="factor-weight">Weight: {{ weight * 100 }}%</div>
+                                </div>
+                                <div class="factor-score-bar">
+                                    <div class="factor-score-fill" 
+                                         style="width: {{ score }}%; 
+                                                background-color: 
+                                                {% if score >= 80 %}#34A853
+                                                {% elif score >= 60 %}#4285F4
+                                                {% elif score >= 40 %}#FBBC05
+                                                {% else %}#EA4335{% endif %};">
+                                        <span class="factor-score-text">{{ score }}</span>
+                                    </div>
+                                </div>
+                                <div style="width: 50px; text-align: right;">
+                                    {{ score }}/100
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visualizations -->
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">SEO Visualizations</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="nav nav-tabs" id="vizTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="radar-tab" data-bs-toggle="tab" data-bs-target="#radar" type="button" role="tab">Radar Chart</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="pie-tab" data-bs-toggle="tab" data-bs-target="#pie" type="button" role="tab">Factor Weights</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="bar-tab" data-bs-toggle="tab" data-bs-target="#bar" type="button" role="tab">Bar Chart</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="vizTabsContent">
+                            <div class="tab-pane fade show active" id="radar" role="tabpanel">
+                                {{ radar_chart|safe }}
+                            </div>
+                            <div class="tab-pane fade" id="pie" role="tabpanel">
+                                {{ pie_chart|safe }}
+                            </div>
+                            <div class="tab-pane fade" id="bar" role="tabpanel">
+                                {{ bar_chart|safe }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Results -->
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Detailed Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="nav nav-tabs" id="detailTabs" role="tablist">
+                            {% for factor, details in results.detailed_results.items() %}
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link {% if loop.first %}active{% endif %}" 
+                                            id="{{ factor }}-tab" 
+                                            data-bs-toggle="tab" 
+                                            data-bs-target="#{{ factor }}" 
+                                            type="button" 
+                                            role="tab">
+                                        {{ factor.replace('_', ' ').title() }}
+                                    </button>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        <div class="tab-content" id="detailTabsContent">
+                            {% for factor, details in results.detailed_results.items() %}
+                                <div class="tab-pane fade {% if loop.first %}show active{% endif %}" 
+                                     id="{{ factor }}" 
+                                     role="tabpanel">
+                                    <div class="mt-3">
+                                        <pre class="bg-light p-3 rounded">{{ details|tojson(indent=2) }}</pre>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center">
+        <div class="container">
+            <p>© 2025 SEO Analyzer - Google-Like Web Crawler</p>
+            <p>A comprehensive SEO analysis tool with advanced algorithms</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

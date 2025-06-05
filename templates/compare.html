@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compare URLs - SEO Analyzer</title>
+    <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}" type="image/x-icon">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            background-color: #4285F4;
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+        .hero {
+            background: linear-gradient(135deg, #4285F4, #34A853);
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            margin-bottom: 2rem;
+        }
+        .card-header {
+            background-color: #4285F4;
+            color: white;
+            font-weight: bold;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        .btn-primary {
+            background-color: #4285F4;
+            border-color: #4285F4;
+        }
+        .btn-primary:hover {
+            background-color: #3367d6;
+            border-color: #3367d6;
+        }
+        footer {
+            background-color: #343a40;
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+        #loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 9999;
+            text-align: center;
+            padding-top: 20%;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        textarea {
+            min-height: 150px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Spinner -->
+    <div id="loading">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h4 class="mt-3">Analyzing and comparing URLs... This may take a moment.</h4>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-spider me-2"></i>SEO Analyzer
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/batch">Batch Analysis</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/compare">Compare URLs</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero text-center">
+        <div class="container">
+            <h1>Compare URLs</h1>
+            <p class="lead">Compare SEO performance of multiple websites side by side</p>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                {% if error %}
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i>{{ error }}
+                </div>
+                {% endif %}
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Enter URLs to Compare</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="compareForm" method="post">
+                            <div class="mb-3">
+                                <label for="urls" class="form-label">URLs (one per line)</label>
+                                <textarea class="form-control" id="urls" name="urls" required placeholder="https://example.com&#10;https://competitor1.com&#10;https://competitor2.com"></textarea>
+                                <div class="form-text">Enter up to 5 URLs to compare (one URL per line)</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="query" class="form-label">Target Search Query (Optional)</label>
+                                <input type="text" class="form-control" id="query" name="query" placeholder="e.g. best seo practices">
+                                <div class="form-text">Adding a search query will enable search intent analysis</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-chart-bar me-2"></i>Compare URLs
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Comparison Tips</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-lightbulb me-2 text-warning"></i>Competitor Analysis</h6>
+                                <p>Compare your website against top competitors to identify strengths and weaknesses.</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-lightbulb me-2 text-warning"></i>Before/After Testing</h6>
+                                <p>Compare the same URL before and after making SEO changes to measure improvement.</p>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-lightbulb me-2 text-warning"></i>Keyword Research</h6>
+                                <p>Compare the same URL with different search queries to find the best keyword opportunities.</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-lightbulb me-2 text-warning"></i>Industry Benchmarking</h6>
+                                <p>Compare top-ranking sites in your industry to establish performance benchmarks.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center">
+        <div class="container">
+            <p>© 2025 SEO Analyzer - Google-Like Web Crawler</p>
+            <p>A comprehensive SEO analysis tool with advanced algorithms</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        document.getElementById('compareForm').addEventListener('submit', function() {
+            document.getElementById('loading').style.display = 'block';
+        });
+    </script>
+</body>
+</html>
