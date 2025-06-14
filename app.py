@@ -3,15 +3,19 @@
 
 import os
 import json
-from flask import Flask, render_template, request, redirect, url_for, jsonify, session, send_file, send_from_directory
-from werkzeug.utils import secure_filename
-import plotly.graph_objects as go
-import plotly.express as px
-import pandas as pd
+import time
+import uuid
 import numpy as np
-from crawler import Crawler
-from indexer import Indexer
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file, send_from_directory
+from werkzeug.utils import secure_filename
+from crawler import WebCrawler, Crawler
 from analyzer import SEOAnalyzer
+from ui_ux_integration import EnhancedSEOAnalyzer
+from indexer import Indexer
+import plotly
+import plotly.express as px
+import plotly.graph_objects as go
+import pandas as pd
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -25,12 +29,99 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 crawler = Crawler()
 indexer = Indexer()
 analyzer = SEOAnalyzer()
+enhanced_analyzer = EnhancedSEOAnalyzer()
 
 
 @app.route('/')
 def index():
     """Render the main page"""
     return render_template('index.html')
+
+
+@app.route('/ui-ux-analysis')
+def ui_ux_analysis_page():
+    """Render the UI/UX analysis page"""
+    return render_template('ui_ux_analysis.html')
+
+
+@app.route('/analyze-ui-ux', methods=['POST'])
+def analyze_ui_ux():
+    """Analyze UI/UX aspects of a URL and return detailed scores"""
+    data = request.form
+    url = data.get('url')
+    run_advanced_tests = data.get('run_advanced_tests', 'false').lower() == 'true'
+    
+    if not url:
+        return jsonify({'error': 'URL is required'}), 400
+    
+    try:
+        # Fetch HTML content
+        html_content = enhanced_analyzer.fetch_url(url)
+        
+        # Perform enhanced UI/UX analysis
+        results = enhanced_analyzer.ui_ux_analyzer.analyze_ui_ux(url, html_content, run_advanced_tests)
+        
+        # Store results in session for visualization
+        session_id = str(uuid.uuid4())
+        session[f'ui_ux_results_{session_id}'] = results
+        
+        return jsonify({
+            'success': True,
+            'session_id': session_id,
+            'ui_ux_score': results['ui_ux_score'],
+            'ui_ux_rating': results['ui_ux_rating'],
+            'recommendations': results['recommendations']
+        })
+        
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        return jsonify({
+            'error': str(e),
+            'details': error_details
+        }), 500
+
+
+@app.route('/enhanced-seo-analysis', methods=['POST'])
+def enhanced_seo_analysis():
+    """Perform enhanced SEO analysis including advanced UI/UX metrics"""
+    data = request.form
+    url = data.get('url')
+    query = data.get('query', None)
+    max_depth = int(data.get('depth', 0))
+    run_advanced_tests = data.get('run_advanced_tests', 'false').lower() == 'true'
+    
+    if not url:
+        return jsonify({'error': 'URL is required'}), 400
+    
+    try:
+        # Perform enhanced SEO analysis
+        results = enhanced_analyzer.perform_enhanced_analysis(
+            url,
+            query=query,
+            max_depth=max_depth,
+            run_advanced_tests=run_advanced_tests
+        )
+        
+        # Store results in session for visualization
+        session_id = str(uuid.uuid4())
+        session[f'enhanced_seo_results_{session_id}'] = results
+        
+        return jsonify({
+            'success': True,
+            'session_id': session_id,
+            'seo_score': results['seo_score'],
+            'ui_ux_score': results['user_experience']['combined_user_experience_score'],
+            'recommendations': results['recommendations']
+        })
+        
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        return jsonify({
+            'error': str(e),
+            'details': error_details
+        }), 500
 
 
 @app.route('/analyze', methods=['POST'])
