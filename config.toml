@@ -1,0 +1,12 @@
+[project]
+name = "SEO Analyzer"
+
+[UI]
+# Customize the UI
+name = "SEO Analyzer"
+icon = "static/img/favicon.ico"
+description = "Analyze websites for SEO performance using advanced algorithms"
+
+[features]
+# Enable file uploads if needed for batch processing
+file_upload = true
